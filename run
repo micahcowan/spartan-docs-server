@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e -u
+CR=$"\r"
+
+read -r path
+path=${path%"$CR"}  # strip off any CR
+printf >&2 '%s\n' "path: $path"
+rfc=${path#/rfc/}
+if test "$rfc" != "$path"; then
+    if echo "$rfc" | egrep -q '^(rfc)?[0-9]+(\.(txt|pdf))?$'; then
+        rfc=${rfc#rfc}  # skip any leading "rfc"
+        rfc=${rfc%.txt} # remove any suffix
+        rfc=${rfc%.pdf} # (ditto)
+        cat "./rfc/orig/rfc${rfc}.txt"
+    elif echo "$rfc" | egrep -q '[0-9]+\.gmi$'; then
+        cat "./rfc/gmi/rfc${rfc}"
+    else
+        echo "Couldn't locate  RFC from URL"
+    fi
+else
+    echo 'You may be lost.'
+fi

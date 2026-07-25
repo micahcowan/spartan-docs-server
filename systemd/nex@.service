@@ -1,0 +1,17 @@
+[Unit]
+Description=Nex: A Nightfall Exchange server
+Requires=nex.socket
+
+[Service]
+Type=simple
+
+DynamicUser=yes
+ProtectProc=noaccess
+
+WorkingDirectory=/var/nex
+ExecStart=/var/nex/run
+Restart=always
+StandardInput=socket
+StandardOutput=socket
+StandardError=journal
+SyslogIdentifier=nex

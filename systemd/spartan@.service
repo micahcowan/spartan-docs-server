@@ -1,0 +1,17 @@
+[Unit]
+Description=Spartan
+Requires=spartan.socket
+
+[Service]
+Type=simple
+
+DynamicUser=yes
+ProtectProc=noaccess
+
+WorkingDirectory=/var/nex
+ExecStart=/var/nex/spartan
+Restart=always
+StandardInput=socket
+StandardOutput=socket
+StandardError=journal
+SyslogIdentifier=spartan

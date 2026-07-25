@@ -1,0 +1,97 @@
+#!/bin/bash
+
+set -e -u
+CR=$(printf '\r.')
+CR=${CR%.}
+LF=$(printf '\n.')
+LF=${LF%.}
+
+read -r host path length
+
+failrsp() {
+    printf "%s\r\n" "$*"
+    printf >&2 "%s\r\n" "$*" # for log
+    exit 1
+}
+
+# File Not Found
+fnf() {
+    failrsp '4 You may be lost.'
+}
+
+# Host s/b docs.addictivecode.org
+host=$(printf '%s\n' "$host" | tr '[A-Z]' '[a-z]')
+if test "$host" != docs.addictivecode.org; then
+    failrsp "4 proxy request refused (host $host unknown)"
+fi
+length=${length%"$CR"} # strip off any trailing CR
+# Lagrange issues an extra space?
+while test "$length" != "${length%' '}"; do
+    length=${length%' '}
+done
+qry=
+if test "$length" != 0; then
+    #failrsp "4 length is \"${length}\" request bodies are not supported here"
+    read -N "$length" -r qry
+fi
+
+printf >&2 '%s\n' "path: $path"
+rfc=${path#/rfc/}
+if test "$rfc" != "$path"; then
+    rfc=${rfc%/} # rm any trailing slash
+    idx=${rfc#idx/}
+    txt=${rfc#txt/}
+    if test -z "$rfc" -o "$rfc" = idx; then
+        # /rfc/ or /rfc/idx/
+        if test -n "$qry"; then
+            # Query string found. Search!
+            printf '2 text/gemini\r\n'
+            ./rfc-search -v QUERY="$qry" < rfc/orig/rfc-index.txt
+        else
+            # No query string. Give main index.
+            printf '2 text/gemini\r\n'
+            exec cat "./rfc/idx/index.gmi"
+        fi
+    elif test "$idx" != "$rfc"; then
+        # /rfc/idx/#/#/
+        idx=${idx%/}    # strip any trailing slash
+        min=${idx%%/*}  # get first num
+        max=${idx##*/}  # get last num
+        fnam="./rfc/idx/${min}-${max}.gmi"
+        if test -e "$fnam"; then
+            printf '%s\r\n' '2 text/gemini'
+            exec cat "$fnam"
+        else
+            fnf
+        fi
+    elif test "$txt" != "$rfc"; then
+        # /rfc/txt/
+        if test -e "./rfc/orig/rfc${txt}.txt"; then
+            printf '%s\r\n' '2 text/plain'
+            exec cat "./rfc/orig/rfc${txt}.txt"
+        else
+            failrsp "4 Don't know about RFC ${rfc}"
+        fi
+    elif echo "$rfc" | egrep -q '^[0-9]+$'; then
+        # /rfc/####/
+        if test -e "./rfc/gmi/rfc${rfc}.gmi"; then
+            printf '%s\r\n' '2 text/gemini'
+            printf '=> /rfc/txt/%s %s Original Text Version of RFC %s\n' "$rfc" "📄" "$rfc"
+            exec cat "./rfc/gmi/rfc${rfc}.gmi"
+        elif test -e "./rfc/orig/rfc${rfc}.txt"; then
+            printf '%s\r\n' '2 text/plain'
+            exec cat "./rfc/orig/rfc${rfc}.txt"
+        elif test -e "./rfc/orig/rfc${rfc}.pdf"; then
+            printf '%s\r\n' '2 application/pdf'
+            exec cat "./rfc/orig/rfc${rfc}.pdf"
+        else
+            failrsp "4 Don't know about RFC ${rfc}"
+        fi
+    else
+        failrsp "4 Couldn't determine RFC from URL"
+    fi
+elif test -z "${path%/}"; then
+    printf '2 text/gemini\r\n=> /rfc/ Internet RFCs\n'
+else
+    fnf
+fi

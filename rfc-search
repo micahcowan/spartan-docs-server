@@ -1,0 +1,37 @@
+#!/usr/bin/awk -f
+
+function canonicalize() {
+    canon = $0
+    gsub(/[ \t\r\n\v]+/, " ", canon)
+    return tolower(canon)
+}
+
+BEGIN {
+    RS = "" # Records are blank-line separated
+    processing = 0
+    printf("# RFC Index Search\n\n")
+    printf("=: /rfc/ 🔎 Search the RFC index\n\n")
+}
+
+# Check for when to start processing RFCs (look for first one)
+!processing && !/^1 Host Software/ {
+    next
+}
+
+# Don't need to check once it's been found
+{ processing = 1 }
+
+index(canonicalize(), tolower(QUERY)) {
+    found = 1
+    rfc = $1
+    printf("=> /rfc/%s [RFC %s]\n", rfc, rfc)
+    print "```"
+    print
+    print "```"
+}
+
+END {
+    if (!found) {
+        print "No results found in RFC index (RFC content is not searched)."
+    }
+}
