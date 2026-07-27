@@ -8,6 +8,7 @@ LF=$(printf '\n.')
 LF=${LF%.}
 
 read -r host path length trash
+length=${length%"$CR"} # strip off any trailing CR
 printf >&2 '%s\n' "${REMOTE_ADDR-[UNKNOWN]} path: $path"
 
 failrsp() {
@@ -21,13 +22,19 @@ fnf() {
     failrsp '4 You may be lost.'
 }
 
+if test -n "$trash"; then
+    failrsp "4 junk at end of client request"
+elif test -z "$host" -o -z "$path" -o -z "$length"; then
+    failrsp "4 malformed request"
+elif test "${length##*[!0-9]}" != "$length"; then
+    failrsp "4 body length is not a number ($length != ${length##*[!0-9]}"
+fi
+
 # Host s/b docs.addictivecode.org
 host=$(printf '%s\n' "$host" | tr '[A-Z]' '[a-z]')
 if test "$host" != docs.addictivecode.org; then
     failrsp "4 proxy request refused (host $host unknown)"
 fi
-
-length=${length%"$CR"} # strip off any trailing CR
 
 qry=
 if test "$length" -gt 1024; then
@@ -35,6 +42,7 @@ if test "$length" -gt 1024; then
 elif test "$length" != 0; then
     #failrsp "4 length is \"${length}\" request bodies are not supported here"
     read -N "$length" -r qry
+    printf >&2 'content body: %s\n' "$qry"
 fi
 
 rfc=${path#/rfc/}
