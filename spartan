@@ -8,10 +8,11 @@ LF=$(printf '\n.')
 LF=${LF%.}
 
 read -r host path length trash
+printf >&2 '%s\n' "${REMOTE_ADDR-[UNKNOWN]} path: $path"
 
 failrsp() {
     printf "%s\r\n" "$*"
-    printf >&2 "%s\r\n" "$*" # for log
+    printf >&2 "failure code: %s\r\n" "$*" # for log
     exit 1
 }
 
@@ -36,9 +37,15 @@ elif test "$length" != 0; then
     read -N "$length" -r qry
 fi
 
-printf >&2 '%s\n' "path: $path"
 rfc=${path#/rfc/}
-if test "$rfc" != "$path"; then
+if false && test "${path%/}" = "/env"; then
+    printf '2 text/plain\r\n'
+    exec env
+fi
+if test "$path" = "/rfc/about-gem/"; then
+    printf '2 text/gemini\r\n'
+    cat rfc/about-gem.gmi
+elif test "$rfc" != "$path"; then
     rfc=${rfc%/} # rm any trailing slash
     idx=${rfc#idx/}
     txt=${rfc#txt/}
@@ -94,6 +101,9 @@ if test "$rfc" != "$path"; then
     fi
 elif test -z "${path%/}"; then
     printf '2 text/gemini\r\n=> /rfc/ Internet RFCs\n'
+elif test "$path" = "/robots.txt"; then
+    printf '2 text/plain\r\n'
+    cat robots.txt
 else
     fnf
 fi
