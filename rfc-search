@@ -9,8 +9,19 @@ function canonicalize() {
 BEGIN {
     RS = "" # Records are blank-line separated
     processing = 0
+    nresults = 0
+    max_results = 100
     printf("# RFC Index Search\n\n")
-    printf("=: /rfc/ 🔎 Search the RFC index\n\n")
+    printf("=> /rfc/ Back to Internet RFCs\n")
+    printf("=: /rfc/ 🔎 Search the RFC index\n")
+    print ""
+    print "Search terms are sought as a single phrase, not individual words."
+    print "Punctuation are respected, case is not."
+    print ""
+    print "Try searches like \"uniform resource\", \"search and retrieval\", \"1 April\", or \"avian carriers\"."
+    print ""
+    print "# Results for \"" QUERY "\":"
+    print ""
 }
 
 # Check for when to start processing RFCs (look for first one)
@@ -23,11 +34,18 @@ BEGIN {
 
 index(canonicalize(), tolower(QUERY)) {
     found = 1
+    nresults += 1
     rfc = $1
+    #printf("=> /rfc/%s [RFC %s] (result %d)\n", rfc, rfc, nresults)
     printf("=> /rfc/%s [RFC %s]\n", rfc, rfc)
     print "```"
     print
     print "```"
+    if (nresults >= max_results) {
+        print ""
+        print "*** Results capped out at " max_results "."
+        exit(50)
+    }
 }
 
 END {
