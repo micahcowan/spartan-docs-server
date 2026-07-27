@@ -76,6 +76,7 @@ if test "$rfc" != "$path"; then
         # /rfc/####/
         if test -e "./rfc/gmi/rfc${rfc}.gmi"; then
             printf '%s\r\n' '2 text/gemini'
+            printf '=> /rfc/ Back to Internet RFCs\n'
             printf '=> /rfc/txt/%s %s Original Text Version of RFC %s\n' "$rfc" "📄" "$rfc"
             exec cat "./rfc/gmi/rfc${rfc}.gmi"
         elif test -e "./rfc/orig/rfc${rfc}.txt"; then
