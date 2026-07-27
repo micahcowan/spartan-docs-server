@@ -37,7 +37,7 @@ index(canonicalize(), tolower(QUERY)) {
     nresults += 1
     rfc = $1
     #printf("=> /rfc/%s [RFC %s] (result %d)\n", rfc, rfc, nresults)
-    printf("=> /rfc/%s [RFC %s]\n", rfc, rfc)
+    printf("=> /rfc/%s/ [RFC %s]\n", rfc, rfc)
     print "```"
     print
     print "```"
