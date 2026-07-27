@@ -1,12 +1,13 @@
 #!/bin/bash
 
 set -e -u
+# Tricks for getting whitespace characters into a shell variable:
 CR=$(printf '\r.')
 CR=${CR%.}
 LF=$(printf '\n.')
 LF=${LF%.}
 
-read -r host path length
+read -r host path length trash
 
 failrsp() {
     printf "%s\r\n" "$*"
@@ -24,13 +25,13 @@ host=$(printf '%s\n' "$host" | tr '[A-Z]' '[a-z]')
 if test "$host" != docs.addictivecode.org; then
     failrsp "4 proxy request refused (host $host unknown)"
 fi
+
 length=${length%"$CR"} # strip off any trailing CR
-# Lagrange issues an extra space?
-while test "$length" != "${length%' '}"; do
-    length=${length%' '}
-done
+
 qry=
-if test "$length" != 0; then
+if test "$length" -gt 1024; then
+    failrsp "4 request body too long"
+elif test "$length" != 0; then
     #failrsp "4 length is \"${length}\" request bodies are not supported here"
     read -N "$length" -r qry
 fi
